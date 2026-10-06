@@ -1,3 +1,4 @@
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Task
@@ -30,3 +31,22 @@ def update_task(session: Session, task_id: int, payload: TaskUpdate) -> Task:
     session.commit()
     session.refresh(task)
     return task
+
+
+def list_tasks(session: Session, completed: bool | None, limit: int, offset: int):
+    filters = [] if completed is None else [Task.completed == completed]
+    total = session.scalar(select(func.count()).select_from(Task).where(*filters))
+    items = session.scalars(
+        select(Task)
+        .where(*filters)
+        .order_by(Task.created_at.desc(), Task.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
+
+
+def delete_task(session: Session, task_id: int) -> None:
+    task = get_task(session, task_id)
+    session.delete(task)
+    session.commit()

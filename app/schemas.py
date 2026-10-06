@@ -39,3 +39,10 @@ class TaskRead(BaseModel):
     completed: bool
     created_at: datetime
     updated_at: datetime
+
+
+class TaskPage(BaseModel):
+    items: list[TaskRead]
+    total: int
+    limit: int
+    offset: int
