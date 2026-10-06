@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import models  # noqa: F401 - register tables before create_all
@@ -34,6 +35,12 @@ def create_app(database_url: str | None = None) -> FastAPI:
     application.state.engine = engine
     application.state.session_factory = session_factory
     application.include_router(router)
+    static_dir = Path(__file__).resolve().parent / "static"
+    application.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @application.get("/", include_in_schema=False)
+    def index():
+        return FileResponse(static_dir / "index.html")
 
     @application.exception_handler(TaskNotFound)
     async def not_found(request, exc):
