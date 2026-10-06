@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db import get_session
-from app.schemas import TaskCreate, TaskRead
+from app.schemas import TaskCreate, TaskRead, TaskUpdate
 from app.services import tasks
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -19,3 +19,8 @@ def create_task(payload: TaskCreate, session: DatabaseSession):
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(task_id: int, session: DatabaseSession):
     return tasks.get_task(session, task_id)
+
+
+@router.patch("/{task_id}", response_model=TaskRead)
+def update_task(task_id: int, payload: TaskUpdate, session: DatabaseSession):
+    return tasks.update_task(session, task_id, payload)
