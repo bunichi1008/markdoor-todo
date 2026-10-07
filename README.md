@@ -17,6 +17,8 @@ uvをまだ導入していない場合は、上記公式手順、またはpipx�
 リポジトリを取得／展開し、`pyproject.toml` があるディレクトリで実行します。
 
 ```sh
+git clone https://github.com/bunichi1008/markdoor-todo.git
+cd markdoor-todo
 uv sync --frozen
 uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
@@ -212,11 +214,11 @@ uv run --frozen python scripts/benchmark.py
 テスト追加→失敗確認→実装→対象テスト→全既存テストの順に進め、機能単位でローカルGitにコミットしています。
 実際の履歴は`git log --oneline --reverse`で確認できます。
 
-提出先のリモートリポジトリは未登録です。後から空のGitHubリポジトリを作り、履歴ごと送信できます。
+GitHubリポジトリ：[bunichi1008/markdoor-todo](https://github.com/bunichi1008/markdoor-todo)。
+開発中のコミット履歴を含めて管理しています。以降の変更はコミットして送信できます。
 
 ```sh
-git remote add origin <作成したリポジトリのURL>
-git push -u origin main
+git push origin main
 ```
 
 ソースのみをZIPで提出する場合：`git archive --format=zip --output=markdoor-todo.zip HEAD`。
