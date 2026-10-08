@@ -80,7 +80,7 @@ uv run --frozen --group browser pytest --browser
 ```
 
 Linuxでブラウザ用システムライブラリが足りない場合は、Playwright公式の
-`playwright install --with-deps chromium`を利用してください（OSパッケージの導入権限が必要です）。
+`uv run --frozen --group browser playwright install --with-deps chromium`を利用してください（OSパッケージの導入権限が必要です）。
 既存のChromiumを使うこともできます。今回の検証では以下を使用しました。
 
 ```sh
@@ -235,18 +235,3 @@ uv run --frozen python scripts/benchmark.py
 
 現在はRouter／Service／Schema／DBを分けているため、この方針で各責務へ変更を追加できます。
 認証方式そのもの（外部認証サービスの利用など）は導入時に選び、今は独自認証の骨組みを先行実装しません。
-
-## 開発履歴と提出
-
-テスト追加→失敗確認→実装→対象テスト→全既存テストの順に進め、機能単位でローカルGitにコミットしています。
-実際の履歴は`git log --oneline --reverse`で確認できます。
-
-GitHubリポジトリ：[bunichi1008/markdoor-todo](https://github.com/bunichi1008/markdoor-todo)。
-開発中のコミット履歴を含めて管理しています。以降の変更はコミットして送信できます。
-
-```sh
-git push origin main
-```
-
-ソースのみをZIPで提出する場合：`git archive --format=zip --output=markdoor-todo.zip HEAD`。
-Git履歴も手渡す場合：`git bundle create markdoor-todo.bundle --all`。
