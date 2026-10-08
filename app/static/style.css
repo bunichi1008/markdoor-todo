@@ -26,7 +26,6 @@ textarea { resize: vertical; min-height: 100px; }
 .hint { margin: 4px 0 18px; font-size: 11px; color: var(--muted); }
 .primary { width: 100%; background: #333; border-color: #333; color: #fff; }
 .primary:hover:not(:disabled) { background: #111; }
-#cancel-edit { width: 100%; margin-top: 8px; }
 
 .list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .list-heading h2 { margin: 0; }
@@ -39,9 +38,16 @@ textarea { resize: vertical; min-height: 100px; }
 .task-card input[type="checkbox"] { width: 18px; height: 18px; margin: 3px 0 0; flex: 0 0 auto; accent-color: #444; cursor: pointer; }
 .task-content { min-width: 0; flex: 1; }
 .task-title { margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; white-space: pre-wrap; }
+.task-title-button { display: block; width: 100%; padding: 0; border: 0; border-radius: 0; text-align: left; font-weight: inherit; color: inherit; white-space: inherit; overflow-wrap: anywhere; }
+.task-title-button:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.task-description { cursor: text; }
+.inline-editor { width: 100%; }
+.inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.inline-actions .primary { width: auto; }
 .task-description { margin: 6px 0; font-size: 13px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .task-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; color: var(--muted); font-size: 11px; }
 .is-completed .task-title { text-decoration: line-through; color: var(--muted); }
+.is-completed .task-title-button { text-decoration: line-through; }
 .task-actions { display: flex; gap: 6px; }
 .task-actions button { padding: 4px 8px; font-size: 12px; }
 .task-actions .delete { color: #a12c2c; }

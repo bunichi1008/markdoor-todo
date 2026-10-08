@@ -1,7 +1,7 @@
 "use strict";
 
 const byId = (id) => document.getElementById(id);
-const state = { offset: 0, limit: 50, total: 0, filter: "", editingId: null, busy: false };
+const state = { offset: 0, limit: 50, total: 0, filter: "", items: [], editor: null, busy: false };
 const form = byId("task-form");
 const titleInput = byId("title");
 const descriptionInput = byId("description");
@@ -19,7 +19,13 @@ function syncControls() {
   document.querySelectorAll("button, input, textarea").forEach((el) => { el.disabled = state.busy; });
   byId("previous").disabled = state.busy || state.offset === 0;
   byId("next").disabled = state.busy || state.offset + state.limit >= state.total;
-  byId("save").textContent = state.busy ? "保存中…" : state.editingId === null ? "タスクを追加" : "変更を保存";
+  byId("save").textContent = state.busy ? "保存中…" : "タスクを追加";
+  const inlineSave = document.querySelector(".inline-save");
+  if (inlineSave) inlineSave.textContent = state.busy ? "保存中…" : "変更を保存";
+  if (state.editor) {
+    const checkbox = document.querySelector(`[data-task-id="${state.editor.id}"] input[type="checkbox"]`);
+    if (checkbox) checkbox.disabled = true;
+  }
   byId("tasks").setAttribute("aria-busy", String(state.busy));
   document.querySelectorAll("[data-filter]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.filter === state.filter));
@@ -70,22 +76,37 @@ async function run(operation) {
   }
 }
 
-function resetForm() {
-  state.editingId = null;
-  form.reset();
-  byId("form-heading").textContent = "新しいタスク";
-  byId("cancel-edit").hidden = true;
+function hasUnsavedChanges() {
+  const draft = state.editor;
+  return draft && (draft.title !== draft.originalTitle || draft.description !== draft.originalDescription);
+}
+
+function discardEditor() {
+  if (hasUnsavedChanges() && !window.confirm("編集中の変更を破棄しますか？")) return false;
+  state.editor = null;
+  renderCards();
+  return true;
+}
+
+function focusTask(taskId) {
+  document.querySelector(`[data-task-id="${taskId}"] .task-title-button`)?.focus();
+}
+
+function cancelEdit(taskId) {
+  if (state.busy) return;
+  state.editor = null;
+  renderCards();
+  focusTask(taskId);
 }
 
 function editTask(task) {
-  if (state.busy) return;
-  state.editingId = task.id;
-  titleInput.value = task.title;
-  descriptionInput.value = task.description ?? "";
-  byId("form-heading").textContent = "タスクを編集";
-  byId("cancel-edit").hidden = false;
-  syncControls();
-  titleInput.focus();
+  if (state.busy || state.editor?.id === task.id || !discardEditor()) return;
+  state.editor = {
+    id: task.id, title: task.title, description: task.description ?? "",
+    originalTitle: task.title, originalDescription: task.description ?? "",
+  };
+  renderCards();
+  byId(`edit-title-${task.id}`).focus();
 }
 
 function element(tag, className, text) {
@@ -95,8 +116,71 @@ function element(tag, className, text) {
   return node;
 }
 
+function renderEditor(task) {
+  const draft = state.editor;
+  const editor = element("form", "inline-editor");
+  editor.setAttribute("aria-label", "タスクを編集");
+  for (const [field, text, tag, hintText] of [
+    ["title", "タイトル", "input", "前後の空白を除いて1〜200文字"],
+    ["description", "説明", "textarea", "5,000文字まで。空欄で説明を削除"],
+  ]) {
+    const id = `edit-${field}-${task.id}`;
+    const label = element("label", "", text);
+    label.htmlFor = id;
+    const input = element(tag);
+    input.id = id;
+    input.name = field;
+    input.value = draft[field];
+    input.required = field === "title";
+    if (tag === "textarea") input.rows = 4;
+    input.setAttribute("aria-describedby", `${id}-hint`);
+    input.addEventListener("input", () => { draft[field] = input.value; });
+    const hint = element("p", "hint", hintText);
+    hint.id = `${id}-hint`;
+    editor.append(label, input, hint);
+  }
+  const actions = element("div", "inline-actions");
+  const save = element("button", "primary inline-save", "変更を保存");
+  save.type = "submit";
+  const cancel = element("button", "", "キャンセル");
+  cancel.type = "button";
+  cancel.addEventListener("click", () => cancelEdit(task.id));
+  actions.append(save, cancel);
+  editor.append(actions);
+  editor.addEventListener("keydown", (event) => {
+    if (event.isComposing || state.busy) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEdit(task.id);
+    } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      editor.requestSubmit();
+    }
+  });
+  editor.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (state.busy) return;
+    await run(async () => {
+      const saved = await api(`/api/tasks/${task.id}`, {
+        method: "PATCH", body: JSON.stringify({ title: draft.title, description: draft.description || null }),
+      });
+      state.items = state.items.map((item) => item.id === task.id ? saved : item);
+      state.editor = null;
+      renderCards();
+      message("notice", "タスクを更新しました。");
+      await loadTasks();
+    });
+    if (!state.editor) focusTask(task.id);
+  });
+  return editor;
+}
+
 function renderTask(task) {
   const card = element("article", `task-card${task.completed ? " is-completed" : ""}`);
+  card.dataset.taskId = task.id;
+  card.addEventListener("click", (event) => {
+    if (!event.target.closest("button, input, textarea, form")) editTask(task);
+  });
   const checkbox = element("input");
   checkbox.type = "checkbox";
   checkbox.checked = task.completed;
@@ -115,7 +199,18 @@ function renderTask(task) {
     });
   });
   const content = element("div", "task-content");
-  content.append(element("h3", "task-title", task.title));
+  if (state.editor?.id === task.id) {
+    content.append(renderEditor(task));
+    card.append(checkbox, content);
+    return card;
+  }
+  const heading = element("h3", "task-title");
+  const title = element("button", "task-title-button", task.title);
+  title.type = "button";
+  title.title = "クリックして編集";
+  title.addEventListener("click", () => editTask(task));
+  heading.append(title);
+  content.append(heading);
   if (task.description) content.append(element("p", "task-description", task.description));
   const meta = element("div", "task-meta");
   const time = element("time", "", `${dateFormat.format(new Date(task.created_at))} JST`);
@@ -132,7 +227,6 @@ function renderTask(task) {
     if (state.busy || !window.confirm(`「${task.title}」を削除しますか？`)) return;
     run(async () => {
       await api(`/api/tasks/${task.id}`, { method: "DELETE" });
-      if (state.editingId === task.id) resetForm();
       message("notice", "タスクを削除しました。");
       await loadTasks();
     });
@@ -140,6 +234,11 @@ function renderTask(task) {
   actions.append(edit, remove);
   card.append(checkbox, content, actions);
   return card;
+}
+
+function renderCards() {
+  byId("tasks").replaceChildren(...state.items.map(renderTask));
+  syncControls();
 }
 
 async function loadTasks() {
@@ -154,7 +253,8 @@ async function loadTasks() {
     result = await fetchPage();
   }
   state.total = result.total;
-  byId("tasks").replaceChildren(...result.items.map(renderTask));
+  state.items = result.items;
+  renderCards();
   byId("empty").hidden = result.items.length !== 0;
   byId("empty").querySelector("h3").textContent = state.filter ? "この状態のタスクはありません" : "タスクはまだありません";
   byId("total").textContent = `${state.total}件`;
@@ -163,22 +263,21 @@ async function loadTasks() {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (state.busy || !discardEditor()) return;
   run(async () => {
-    const editing = state.editingId !== null;
     const payload = { title: titleInput.value, description: descriptionInput.value || null };
-    await api(editing ? `/api/tasks/${state.editingId}` : "/api/tasks", {
-      method: editing ? "PATCH" : "POST", body: JSON.stringify(payload),
-    });
-    resetForm();
-    if (!editing) { state.offset = 0; state.filter = ""; }
-    message("notice", editing ? "タスクを更新しました。" : "タスクを追加しました。");
+    await api("/api/tasks", { method: "POST", body: JSON.stringify(payload) });
+    form.reset();
+    state.offset = 0;
+    state.filter = "";
+    message("notice", "タスクを追加しました。");
     await loadTasks();
   });
 });
-byId("cancel-edit").addEventListener("click", () => { resetForm(); syncControls(); });
 byId("refresh").addEventListener("click", () => run(loadTasks));
 
 function navigate(filter, offset) {
+  if (state.busy || !discardEditor()) return;
   run(async () => {
     const previous = { filter: state.filter, offset: state.offset };
     state.filter = filter;
@@ -192,4 +291,10 @@ document.querySelectorAll("[data-filter]").forEach((button) => {
 });
 byId("previous").addEventListener("click", () => navigate(state.filter, Math.max(0, state.offset - state.limit)));
 byId("next").addEventListener("click", () => navigate(state.filter, state.offset + state.limit));
+window.addEventListener("beforeunload", (event) => {
+  if (hasUnsavedChanges()) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
 run(loadTasks);
