@@ -8,24 +8,22 @@
   <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <header class="site-header"><a href="/" class="brand"><span class="brand-icon">✓</span> TODO<span class="brand-note">MY WORKSPACE</span></a></header>
   <main>
-    <div class="page-heading"><div><p class="eyebrow">MAKE ROOM FOR WHAT MATTERS</p><h1>今日を、ひとつずつ。</h1><p class="subtitle">やることを書き出して、できたことを積み重ねよう。</p></div><span class="header-label">タスク管理</span></div>
+    <h1>タスク管理</h1>
     <div class="messages" aria-live="polite"><p id="notice" role="status" hidden></p><p id="error" role="alert" hidden></p></div>
     <div class="workspace">
       <aside class="form-panel">
-        <p class="eyebrow">YOUR NEXT STEP</p><h2 id="form-heading">新しいタスク</h2>
+        <h2 id="form-heading">新しいタスク</h2>
         <form id="task-form">
           <label for="title">タイトル <span class="required" aria-hidden="true">必須</span></label>
-          <input id="title" name="title" required autocomplete="off" placeholder="何をしますか？" aria-describedby="title-hint">
+          <input id="title" name="title" required autocomplete="off" aria-describedby="title-hint">
           <p id="title-hint" class="hint">前後の空白を除いて200文字まで</p>
           <label for="description">説明 <span class="optional" aria-hidden="true">任意</span></label>
-          <textarea id="description" name="description" rows="6" placeholder="メモや手順を書き添える" aria-describedby="description-hint"></textarea>
+          <textarea id="description" name="description" rows="5" aria-describedby="description-hint"></textarea>
           <p id="description-hint" class="hint">5,000文字まで</p>
           <button id="save" class="primary" type="submit">タスクを追加</button>
           <button id="cancel-edit" class="secondary" type="button" hidden>編集をキャンセル</button>
         </form>
-        <p class="form-footnote">小さな一歩も、大切なタスク。</p>
       </aside>
       <section class="list-panel" aria-labelledby="list-heading">
         <div class="list-heading"><h2 id="list-heading">タスク一覧 <span id="total">0件</span></h2><button id="refresh" class="text-button" type="button">再読み込み</button></div>
@@ -35,11 +33,10 @@
           <button type="button" data-filter="true" aria-pressed="false">完了</button>
         </div>
         <div id="tasks" aria-busy="false"></div>
-        <div id="empty" class="empty-state" hidden><span aria-hidden="true">✓</span><h3>タスクはまだありません</h3><p>新しいタスクを追加して、はじめましょう。</p></div>
+        <div id="empty" class="empty-state" hidden><h3>タスクはまだありません</h3></div>
         <nav class="pagination" aria-label="ページ切り替え"><button id="previous" type="button" class="secondary">前へ</button><span id="page-info">1 / 1 ページ</span><button id="next" type="button" class="secondary">次へ</button></nav>
       </section>
     </div>
-    <footer>ひとつ終われば、ひとつ前へ。<span>時刻は日本時間（JST）で表示</span></footer>
   </main>
 </body>
 </html>
